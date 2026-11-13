@@ -69,7 +69,9 @@ def _most_frequent(array, extra_value, n_repeat, sample_weight=None):
             # scipy.stats.mode is slow with object dtype array.
             # Python Counter is more efficient
             if sample_weight is not None:
-                counter = Counter(dict(zip(array, sample_weight)))
+                counter = Counter()
+                for x, c in zip(array, sample_weight):
+                    counter[x] += c
             else:
                 counter = Counter(array)
             most_frequent_count = counter.most_common(1)[0][1]
@@ -570,11 +572,10 @@ class SimpleImputer(_BaseImputer):
         # dense and its values over all records need to be taken into
         # account precluding a sparse fit.
         for i in range(X.shape[1]):
-            Xi_dense = X[:, [i]].todense()
+            Xi_dense = X[:, [i]].toarray()
             statistics[i] = self._dense_fit(Xi_dense, strategy, missing_values,
                                             fill_value, sample_weight,
-                                            fit_indicator=False)[0]
-
+                                            fit_indicator=False).item()
         if self.add_indicator:
             missing_mask = _get_mask(X, missing_values)
             super()._fit_indicator(missing_mask)
@@ -642,10 +643,14 @@ class SimpleImputer(_BaseImputer):
             for i, (row, row_mask) in enumerate(zip(X[:], mask[:])):
                 row_mask = np.logical_not(row_mask).astype(bool)
                 row = row[row_mask]
+                if sample_weight is not None:
+                    sw = sample_weight[row_mask.flat]
+                else:
+                    sw = sample_weight
                 if len(row) == 0 and self.keep_empty_features:
                     most_frequent[i] = 0
                 else:
-                    most_frequent[i] = _most_frequent(row, np.nan, 0, sample_weight)
+                    most_frequent[i] = _most_frequent(row, np.nan, 0, sw)
 
             return most_frequent
 
