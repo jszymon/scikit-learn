@@ -8,8 +8,7 @@ import pytest
 from scipy import sparse
 from scipy.stats import kstest
 
-from sklearn import tree
-from sklearn import config_context
+from sklearn import config_context, tree
 from sklearn.datasets import load_diabetes
 from sklearn.dummy import DummyRegressor
 from sklearn.impute import IterativeImputer, KNNImputer, MissingIndicator, SimpleImputer
@@ -18,7 +17,6 @@ from sklearn.linear_model import ARDRegression, BayesianRidge, RidgeCV
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline, make_union
 from sklearn.random_projection import _sparse_random_matrix
-from sklearn.utils.stats import _weighted_percentile
 from sklearn.utils._testing import (
     _convert_container,
     assert_allclose,
@@ -34,6 +32,8 @@ from sklearn.utils.fixes import (
     LIL_CONTAINERS,
     SCIPY_VERSION_BELOW_1_12,
 )
+from sklearn.utils.stats import _weighted_percentile
+
 
 def _assert_array_equal_and_same_dtype(x, y):
     assert_array_equal(x, y)
@@ -443,7 +443,7 @@ def test_imputation_most_frequent_objects_weighted(marker):
     )
 
     sample_weight = np.array([5.1, 0.2, 1.5, 0.5])
-    
+
     X_true = np.array(
         [
             ["b", "a", "f"],
@@ -468,7 +468,7 @@ def test_imputation_most_frequent_pandas(dtype):
     f = io.StringIO("Cat1,Cat2,Cat3,Cat4\n,i,x,\na,,y,\na,j,,\nb,j,x,")
 
     df = pd.read_csv(f, dtype=dtype)
-    
+
     X_true = np.array(
         [["a", "i", "x"], ["a", "j", "y"], ["a", "j", "x"], ["b", "j", "x"]],
         dtype=object,
@@ -540,7 +540,8 @@ def test_imputation_constant_integer(keep_empty_features, sample_weight):
 @pytest.mark.parametrize("array_constructor", CSR_CONTAINERS + [np.asarray])
 @pytest.mark.parametrize("keep_empty_features", [True, False])
 @pytest.mark.parametrize("sample_weight", _generate_test_sample_weights(4))
-def test_imputation_constant_float(array_constructor, keep_empty_features, sample_weight):
+def test_imputation_constant_float(array_constructor, keep_empty_features,
+                                   sample_weight):
     # Test imputation using the constant strategy on floats
     X = np.array(
         [
@@ -677,7 +678,9 @@ def test_imputation_pipeline_grid_search_weighted(sample_weight):
 
     pipeline = Pipeline(
         [
-            ("imputer", SimpleImputer(missing_values=missing_values).set_fit_request(sample_weight=True)),
+            ("imputer", SimpleImputer(missing_values=missing_values).set_fit_request(
+                sample_weight=True)
+             ),
             ("tree", tree.DecisionTreeRegressor(random_state=0)),
         ]
     )
@@ -1898,7 +1901,9 @@ def test_imputer_lists_fit_transform(sample_weight):
     """
 
     X = [["a", "b"], ["c", "b"], ["a", "a"]]
-    imp_frequent = SimpleImputer(strategy="most_frequent").fit(X, sample_weight=sample_weight)
+    imp_frequent = SimpleImputer(strategy="most_frequent").fit(
+        X, sample_weight=sample_weight
+    )
     X_trans = imp_frequent.transform([[np.nan, np.nan]])
     assert X_trans.dtype == object
     assert_array_equal(X_trans, [["a", "b"]])
@@ -1990,7 +1995,7 @@ def test_imputation_custom(csc_container):
         imputer = SimpleImputer(missing_values=np.nan, strategy=np.min)
         X_trans = imputer.fit(csc_container(X),
                               sample_weight=np.ones(X.shape[0]))
-        
+
 
 def test_simple_imputer_constant_fill_value_casting():
     """Check that we raise a proper error message when we cannot cast the fill value

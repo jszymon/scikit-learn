@@ -537,7 +537,8 @@ class SimpleImputer(_BaseImputer):
                 else:
                     if strategy == "mean":
                         if sample_weight is not None:
-                            column_weight = sample_weight[X.indices[X.indptr[i] : X.indptr[i + 1]]]
+                            column_idx = X.indices[X.indptr[i] : X.indptr[i + 1]]
+                            column_weight = sample_weight[column_idx]
                             column_weight = column_weight[~mask_column]
                             nonzero_column_weight = column_weight[~mask_zeros]
                             s = column_weight.sum()
@@ -566,7 +567,7 @@ class SimpleImputer(_BaseImputer):
         if strategy == "constant":
             # constant strategy is not affected by weights
             return self._sparse_fit(X, strategy, missing_values, fill_value)
-        
+
         statistics = np.empty(X.shape[1])
         # Do a dense fit on each column separately.  sample_weight is
         # dense and its values over all records need to be taken into
@@ -579,7 +580,7 @@ class SimpleImputer(_BaseImputer):
         if self.add_indicator:
             missing_mask = _get_mask(X, missing_values)
             super()._fit_indicator(missing_mask)
-            
+
         return statistics
 
     def _dense_fit(self, X, strategy, missing_values, fill_value,
